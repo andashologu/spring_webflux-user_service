@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User API Test (Server-only errors)</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <h2>User API CRUD Test</h2>
+  <button onclick="login()">Login</button><br><br>
+  <button onclick="createUser()">Create User</button>
+  <button onclick="getUserById()">Get User by ID</button>
+  <button onclick="getUserByUsername()">Get User by Username</button>
+  <button onclick="getAllUsers()">Get All Users</button>
+  <button onclick="updateUser()">Update User</button>
+  <button onclick="deleteUser()">Delete User</button>
+  <button onclick="deleteCurrentUser()">Delete Current User</button>
+
+  <pre id="log" style="background:#f0f0f0;padding:10px;"></pre>
+
+  <script>
+    const BASE_URL = "http://localhost:8080/users";
+    let jwt = "";
+
+    function log(response) {
+      console.log("response: ");
+      console.log(response);
+      const pre = document.getElementById("log");
+      pre.textContent += response + "\n";
+    }
+
+    function requestServer(url, method = "GET", body = null) {
+      return $.ajax({
+        url,
+        method,
+        contentType: "application/json",
+        headers: { "Authorization": `Bearer ${jwt}` },
+        data: body ? JSON.stringify(body) : null
+      }).done(response => { 
+        log(response); 
+      })
+      .fail(xhr => {
+        if (xhr.responseJSON && xhr.responseJSON.message)
+          log(xhr.responseJSON.message)
+          else if (xhr.responseText) log(xhr.responseText)
+          else log(xhr.statusText || "Unknown error")
+      });
+    }
+    
+    // LOGIN
+    function login() {
+      const body = { username: "andashologu", password: "Marse@0000" };
+      requestServer("http://localhost:8080/login", "POST", body);
+    }
+
+    // CREATE USER
+    function createUser() {
+      let mobileNumber = "0649059967";
+      // Remove leading 0 if present
+      if (mobileNumber.startsWith("0")) mobileNumber = mobileNumber.slice(1)
+      const body = {
+        username: "andashologu",
+        email: "andashologu@gmail.com",
+        mobileNumber: mobileNumber,
+        countryCode: "+27",
+        password: "Marse@0000",
+        roles: [{ name: "USER_ROLE" }],
+        permissions: [{ name: "READ_PERMISSION" }]
+      };
+      requestServer(BASE_URL, "POST", body);
+    }
+
+    function getUserById() {
+      const userId = 1;
+      requestServer(`${BASE_URL}/${userId}`);
+    }
+
+    function getUserByUsername() {
+      const username = "testuser";
+      requestServer(`${BASE_URL}/${username}`);
+    }
+
+    function getAllUsers() {
+      requestServer(`${BASE_URL}?size=5&sortBy=username&direction=ASC`);
+    }
+
+    function updateUser() {
+      const userId = 1;
+      const updates = { email: "updated@example.com" };
+      requestServer(`${BASE_URL}/${userId}`, "PATCH", updates);
+    }
+
+    function deleteUser() {
+      const userId = 1;
+      requestServer(`${BASE_URL}/${userId}`, "DELETE");
+    }
+
+    function deleteCurrentUser() {
+      requestServer(`${BASE_URL}/current_user`, "DELETE");
+    }
+  </script>
+</body>
+</html>
